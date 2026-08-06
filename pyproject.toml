@@ -7,7 +7,9 @@ authors = [
     { name = "Samip Patel", email = "samipapatel@yahoo.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "anthropic>=0.120.2",
+]
 
 [project.scripts]
 doc-extractor = "doc_extractor:main"
