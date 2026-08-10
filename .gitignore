@@ -64,3 +64,12 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# API usage / cost logs
+logs/
+
+# Examples
+examples/anthropic_sdk/
+
+# Cursor
+.cursor/

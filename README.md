@@ -1,2 +1,2 @@
 # doc-extractor
-An invoice/contract -> structured data pipeline -> deployed
+An invoice -> structured data pipeline -> deployed
