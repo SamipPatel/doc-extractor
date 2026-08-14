@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 # USD per million tokens: (input, output)
-# Sonnet 5 intro pricing through 2026-08-31; update after that.
+# Approximate / time-sensitive — Sonnet 5 intro pricing through 2026-08-31; update after that.
 PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
     "claude-sonnet-5": (2.0, 10.0),
     "claude-sonnet-4-6": (3.0, 15.0),
@@ -40,6 +40,7 @@ CSV_FIELDS = [
     "label",
 ]
 
+# ContextVar = request-scoped label (like AsyncLocalStorage / AsyncLocal) without threading args.
 _label: ContextVar[str] = ContextVar("usage_label", default="")
 
 
@@ -104,7 +105,10 @@ def _log_message(message: Any, model: str | None = None) -> None:
 
 
 def instrument(client: Any) -> Any:
-    """Wrap messages.create / stream / parse so every call is usage-logged."""
+    """Wrap messages.create / stream / parse so every call is usage-logged.
+
+    Monkey-patch keeps call sites as normal SDK usage instead of a custom wrapper API.
+    """
     messages = client.messages
     original_create = messages.create
     original_stream = messages.stream

@@ -15,6 +15,7 @@ DEFAULT_MODEL = "claude-sonnet-4-5"
 DEFAULT_MAX_TOKENS = 4096
 
 
+# Cache size 1 = process-wide singleton so instrument() wraps the client once.
 @lru_cache(maxsize=1)
 def get_client() -> Anthropic:
     load_dotenv()
@@ -32,6 +33,7 @@ def extract_invoice_structured(
 ) -> Invoice:
     """Call Claude with structured outputs and return a validated Invoice."""
     client = get_client()
+    # messages.parse + output_format binds the reply to our Pydantic Invoice schema.
     response = client.messages.parse(
         model=model,
         max_tokens=max_tokens,
@@ -40,6 +42,7 @@ def extract_invoice_structured(
         output_format=Invoice,
     )
     invoice = response.parsed_output
+    # Fail closed: a null parse means we cannot trust downstream validation.
     if invoice is None:
         raise RuntimeError("Claude returned no structured invoice output")
     return invoice

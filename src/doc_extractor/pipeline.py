@@ -16,6 +16,7 @@ def extract_invoice(path: Path | str) -> Invoice:
     if not path.is_file():
         raise FileNotFoundError(f"PDF not found: {path}")
 
+    # Text-first is cheaper/faster; vision only when embedded text looks too sparse.
     text = extract_text(path)
     if needs_vision(text):
         label = "extract-vision"
@@ -24,6 +25,7 @@ def extract_invoice(path: Path | str) -> Invoice:
         label = "extract-text"
         content = build_text_content(text)
 
+    # Label only the API call so CSV cost rows attribute text vs vision without changing call sites.
     with labeled(label):
         invoice = extract_invoice_structured(content)
 

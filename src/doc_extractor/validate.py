@@ -1,4 +1,7 @@
-"""Domain validation for extracted invoices beyond Pydantic schema checks."""
+"""Domain validation for extracted invoices beyond Pydantic schema checks.
+
+Schema can pass while line math / totals are wrong — this second pass catches that.
+"""
 
 from decimal import Decimal
 
@@ -7,6 +10,7 @@ from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from doc_extractor.models import Invoice
 
+# Allow small drift from rounding, OCR, or LLM cent-level noise.
 TOLERANCE = Decimal("0.02")
 
 
@@ -89,6 +93,7 @@ def validate_invoice(invoice: Invoice, *, tolerance: Decimal = TOLERANCE) -> Inv
             }
         )
 
+    # Same ValidationError type as schema failures so callers handle one error shape.
     if errors:
         raise ValidationError.from_exception_data("Invoice", errors)
 

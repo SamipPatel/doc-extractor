@@ -1,4 +1,9 @@
-"""Pydantic models for structured invoice extraction."""
+"""Pydantic models for structured invoice extraction.
+
+Schema layer only (shape/types). Arithmetic rules live in validate.py so the LLM
+can satisfy the schema and still fail domain checks separately.
+Pydantic here is like Zod + a typed DTO: runtime parse plus a typed object.
+"""
 
 from datetime import date
 from decimal import Decimal
@@ -9,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class Vendor(BaseModel):
     """The business that issued the invoice."""
 
+    # Reject unknown keys so Claude cannot invent fields outside this schema.
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -34,14 +40,13 @@ class LineItem(BaseModel):
 
     description: str
     quantity: Decimal
+    # Decimal avoids float rounding on money (like C# decimal, not JS number).
     unit_price: Decimal
     amount: Decimal
 
 
 class Invoice(BaseModel):
-    """Structured data extracted from an invoice document.
-
-    """
+    """Structured data extracted from an invoice document."""
 
     model_config = ConfigDict(extra="forbid")
 

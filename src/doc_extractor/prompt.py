@@ -25,6 +25,7 @@ _USER_INSTRUCTION = (
 
 def build_text_content(text: str) -> list[dict[str, Any]]:
     """Build user message content from extracted PDF text."""
+    # XML-ish tags delimit document text so the model treats it as data, not instructions.
     return [
         {
             "type": "text",
@@ -47,6 +48,7 @@ def build_vision_content(page_images: list[bytes]) -> list[dict[str, Any]]:
             ),
         }
     ]
+    # Page order preserved: Claude sees pages as sequential image blocks (Anthropic vision format).
     for png in page_images:
         content.append(
             {
