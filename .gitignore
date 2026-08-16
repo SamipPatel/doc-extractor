@@ -68,6 +68,9 @@ Thumbs.db
 # API usage / cost logs
 logs/
 
+# Invoices
+invoices/
+
 # Examples
 examples/anthropic_sdk/
 
