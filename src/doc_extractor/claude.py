@@ -8,7 +8,7 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 
 from doc_extractor.models import Invoice
-from doc_extractor.prompt import SYSTEM_PROMPT
+from doc_extractor.prompt import get_system_prompt
 from doc_extractor.usage_log import instrument
 
 DEFAULT_MODEL = "claude-sonnet-4-5"
@@ -37,7 +37,8 @@ def extract_invoice_structured(
     response = client.messages.parse(
         model=model,
         max_tokens=max_tokens,
-        system=SYSTEM_PROMPT,
+        # Load at call time so a lab UI version bump is picked up without restart.
+        system=get_system_prompt(),
         messages=[{"role": "user", "content": content}],
         output_format=Invoice,
     )

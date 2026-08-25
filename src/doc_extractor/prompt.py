@@ -1,28 +1,9 @@
 """Prompt builders for text and vision invoice extraction."""
 
 import base64
-import hashlib
 from typing import Any
 
-SYSTEM_PROMPT = """\
-You extract structured invoice data from documents.
-
-Rules:
-- Use only information present in the document. Do not invent vendors, customers, \
-line items, or amounts.
-- If a field is missing or illegible, use null for optional fields; for required \
-fields, use the best grounded value available in the document.
-- Currency must be a 3-letter ISO-4217 code (default USD when implied).
-- Dates must be ISO format YYYY-MM-DD.
-- Money fields are decimal numbers without currency symbols.
-- Preserve line-item order as shown on the invoice.
-- subtotal is the sum of line-item amounts only. Do not add or subtract \
-discount, tax, or shipping.
-- total is subtotal minus discount, plus tax, plus shipping.
-"""
-
-# Bump when SYSTEM_PROMPT changes in a way that should distinguish eval runs.
-PROMPT_VERSION = "v2"
+from doc_extractor.prompt_store import get_current
 
 _USER_INSTRUCTION = (
     "Extract the invoice into the structured schema. "
@@ -30,9 +11,19 @@ _USER_INSTRUCTION = (
 )
 
 
+def get_system_prompt() -> str:
+    """Current system prompt from the file-backed registry."""
+    return get_current()["system_prompt"]
+
+
+def get_prompt_version() -> str:
+    """Current version label (vN) from the file-backed registry."""
+    return get_current()["version"]
+
+
 def prompt_sha256() -> str:
     """Content hash so an un-bumped prompt edit is still visible in eval artifacts."""
-    return hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()
+    return get_current()["hash"]
 
 
 def build_text_content(text: str) -> list[dict[str, Any]]:

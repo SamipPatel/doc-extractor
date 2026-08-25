@@ -3,13 +3,14 @@
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from doc_extractor.claude import DEFAULT_MODEL
 from doc_extractor.pipeline import extract_invoice
-from doc_extractor.prompt import PROMPT_VERSION, prompt_sha256
+from doc_extractor.prompt import get_prompt_version, get_system_prompt, prompt_sha256
 from doc_extractor.usage_log import capturing_usage
 from evals.scoring import FIELD_ORDER, score_document, tally_fields
 
@@ -18,6 +19,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TEST_DIR = _REPO_ROOT / "test_data"
 DEFAULT_OUT_DIR = _REPO_ROOT / "eval_runs"
 _STYLE_ORDER = ("clean", "scanned", "handwritten", "downloaded")
+
+ProgressFn = Callable[[dict[str, Any]], None]
 
 
 def _ratio(correct: int, total: int) -> float:
@@ -66,6 +69,8 @@ def run_eval(
     test_dir: Path = DEFAULT_TEST_DIR,
     out_dir: Path = DEFAULT_OUT_DIR,
     limit: int | None = None,
+    progress: ProgressFn | None = None,
+    quiet: bool = False,
 ) -> dict[str, Any]:
     """Score each ground-truth PDF and persist a timestamped run artifact."""
     gold_path = test_dir / "ground_truth.json"
@@ -73,15 +78,30 @@ def run_eval(
     if limit is not None:
         gold_docs = gold_docs[:limit]
 
+    # Snapshot at start so a mid-run registry bump cannot mix versions in one artifact.
+    prompt_version = get_prompt_version()
+    system_prompt = get_system_prompt()
+    prompt_hash = prompt_sha256()
+
     started = datetime.now(UTC)
     per_field_counts: dict[str, list[int]] = {}
     style_counts: dict[str, list[int]] = {}
     docs: list[dict[str, Any]] = []
     n_errors = 0
+    total = len(gold_docs)
 
     with capturing_usage() as all_costs:
-        for gold in gold_docs:
+        for index, gold in enumerate(gold_docs):
             filename = gold["file"]
+            if progress is not None:
+                progress(
+                    {
+                        "done": index,
+                        "total": total,
+                        "current_file": filename,
+                        "n_errors": n_errors,
+                    }
+                )
             style = gold.get("style", "unknown")
             extracted: dict[str, Any] | None = None
             error: str | None = None
@@ -111,12 +131,23 @@ def run_eval(
                 }
             )
 
+    if progress is not None:
+        progress(
+            {
+                "done": total,
+                "total": total,
+                "current_file": None,
+                "n_errors": n_errors,
+            }
+        )
+
     overall_ok = sum(ok for ok, _ in per_field_counts.values())
     overall_n = sum(n for _, n in per_field_counts.values())
     run = {
         "timestamp": started.isoformat(),
-        "prompt_version": PROMPT_VERSION,
-        "prompt_hash": prompt_sha256(),
+        "prompt_version": prompt_version,
+        "prompt_hash": prompt_hash,
+        "system_prompt": system_prompt,
         "model": DEFAULT_MODEL,
         "total_cost_usd": round(sum(all_costs), 6),
         "n_docs": len(docs),
@@ -142,10 +173,12 @@ def run_eval(
 
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = started.strftime("%Y%m%d_%H%M%S")
-    out_path = out_dir / f"run_{stamp}_{PROMPT_VERSION}.json"
+    out_path = out_dir / f"run_{stamp}_{prompt_version}.json"
     out_path.write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8")
-    print(format_table(run))
-    print(f"\nwrote {out_path}")
+    run["artifact"] = out_path.name
+    if not quiet:
+        print(format_table(run))
+        print(f"\nwrote {out_path}")
     return run
 
 

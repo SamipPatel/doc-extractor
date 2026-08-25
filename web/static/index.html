@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Doc Extractor Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="masthead">
+      <div class="masthead-mark">
+        <h1>Doc Extractor</h1>
+        <p class="masthead-lede">
+          Proof the prompt. Run the set. Read the misses.
+        </p>
+      </div>
+      <div class="masthead-meta">
+        <span class="stamp" id="version-stamp">v—</span>
+        <span class="hash" id="hash-chip">hash —</span>
+      </div>
+    </header>
+
+    <div class="progress-rail" id="progress-rail" hidden>
+      <div class="progress-fill" id="progress-fill"></div>
+      <p class="progress-copy" id="progress-copy">Idle</p>
+    </div>
+
+    <nav class="folio-nav" aria-label="Lab views">
+      <button type="button" class="folio-tab is-active" data-view="prompt">
+        Prompt
+      </button>
+      <button type="button" class="folio-tab" data-view="runs">Runs</button>
+    </nav>
+
+    <main>
+      <section id="view-prompt" class="folio">
+        <aside class="history" aria-label="Prompt versions">
+          <h2>Editions</h2>
+          <ol id="version-list"></ol>
+        </aside>
+        <div class="manuscript">
+          <div class="manuscript-toolbar">
+            <p id="editor-banner" class="banner" hidden></p>
+            <div class="toolbar-actions">
+              <button type="button" class="btn btn-ink" id="btn-save">
+                Save &amp; bump
+              </button>
+              <label class="limit-label">
+                Set
+                <select id="eval-limit">
+                  <option value="3">smoke · 3</option>
+                  <option value="5">smoke · 5</option>
+                  <option value="10">ten</option>
+                  <option value="">full set</option>
+                </select>
+              </label>
+              <button type="button" class="btn btn-stamp" id="btn-eval">
+                Run eval
+              </button>
+            </div>
+          </div>
+          <textarea
+            id="prompt-editor"
+            spellcheck="false"
+            aria-label="System prompt"
+          ></textarea>
+          <p class="manuscript-foot" id="save-status"></p>
+        </div>
+      </section>
+
+      <section id="view-runs" class="folio folio-runs" hidden>
+        <aside class="run-rail" aria-label="Eval runs">
+          <h2>Sheets</h2>
+          <div class="compare-pick">
+            <label>
+              A
+              <select id="compare-a"></select>
+            </label>
+            <label>
+              B
+              <select id="compare-b"></select>
+            </label>
+            <button type="button" class="btn btn-ink" id="btn-compare">
+              Compare
+            </button>
+          </div>
+          <ol id="run-list"></ol>
+        </aside>
+        <div class="proof" id="run-detail">
+          <p class="empty">Select a sheet from the rail.</p>
+        </div>
+      </section>
+    </main>
+
+    <div id="confirm-modal" class="modal" hidden>
+      <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <h2 id="confirm-title">Unsaved prompt</h2>
+        <p>The editor has changes that are not saved. Run eval on the last saved edition anyway?</p>
+        <div class="toolbar-actions">
+          <button type="button" class="btn btn-ink" id="confirm-cancel">Cancel</button>
+          <button type="button" class="btn btn-stamp" id="confirm-run">Run unsaved</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
