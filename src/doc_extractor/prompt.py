@@ -1,6 +1,7 @@
 """Prompt builders for text and vision invoice extraction."""
 
 import base64
+import hashlib
 from typing import Any
 
 SYSTEM_PROMPT = """\
@@ -15,12 +16,23 @@ fields, use the best grounded value available in the document.
 - Dates must be ISO format YYYY-MM-DD.
 - Money fields are decimal numbers without currency symbols.
 - Preserve line-item order as shown on the invoice.
+- subtotal is the sum of line-item amounts only. Do not add or subtract \
+discount, tax, or shipping.
+- total is subtotal minus discount, plus tax, plus shipping.
 """
+
+# Bump when SYSTEM_PROMPT changes in a way that should distinguish eval runs.
+PROMPT_VERSION = "v2"
 
 _USER_INSTRUCTION = (
     "Extract the invoice into the structured schema. "
     "Fill every field you can ground in the document."
 )
+
+
+def prompt_sha256() -> str:
+    """Content hash so an un-bumped prompt edit is still visible in eval artifacts."""
+    return hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()
 
 
 def build_text_content(text: str) -> list[dict[str, Any]]:

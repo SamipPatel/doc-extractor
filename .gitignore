@@ -68,8 +68,14 @@ Thumbs.db
 # API usage / cost logs
 logs/
 
+# Eval run artifacts
+eval_runs/
+
 # Invoices
 invoices/
+
+# Test data
+test_data/
 
 # Examples
 examples/anthropic_sdk/

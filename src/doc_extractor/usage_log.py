@@ -42,6 +42,9 @@ CSV_FIELDS = [
 
 # ContextVar = request-scoped label (like AsyncLocalStorage / AsyncLocal) without threading args.
 _label: ContextVar[str] = ContextVar("usage_label", default="")
+# Stack of cost lists so nested capturing_usage() both see the same API calls
+# (inner = per-doc, outer = whole run). Like nested using-blocks sharing one meter.
+_cost_sinks: ContextVar[tuple[list[float], ...]] = ContextVar("cost_sinks", default=())
 
 
 @contextmanager
@@ -52,6 +55,17 @@ def labeled(label: str) -> Iterator[None]:
         yield
     finally:
         _label.reset(token)
+
+
+@contextmanager
+def capturing_usage() -> Iterator[list[float]]:
+    """Accumulate cost_usd from instrumented API calls in this scope."""
+    costs: list[float] = []
+    token = _cost_sinks.set((*_cost_sinks.get(), costs))
+    try:
+        yield costs
+    finally:
+        _cost_sinks.reset(token)
 
 
 def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
@@ -70,6 +84,8 @@ def log_usage(
 ) -> float:
     label = _label.get() if label is None else label
     cost = estimate_cost(model, input_tokens, output_tokens)
+    for sink in _cost_sinks.get():
+        sink.append(cost)
     path.parent.mkdir(parents=True, exist_ok=True)
     write_header = not path.exists()
 

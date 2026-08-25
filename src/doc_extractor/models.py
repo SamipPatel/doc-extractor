@@ -59,10 +59,19 @@ class Invoice(BaseModel):
     terms: str | None = None
     currency: str = Field(default="USD", min_length=3, max_length=3)
     line_items: list[LineItem]
-    subtotal: Decimal
-    discount: Decimal = Decimal(0)
+    # Descriptions travel in the JSON schema Claude sees; arithmetic is still
+    # enforced in validate.py, not here.
+    subtotal: Decimal = Field(
+        description="Sum of line-item amounts only; exclude discount, tax, and shipping."
+    )
+    discount: Decimal = Field(
+        default=Decimal(0),
+        description="Header-level discount subtracted from subtotal when computing total.",
+    )
     tax_rate: Decimal = Decimal(0)
     tax: Decimal = Decimal(0)
     shipping: Decimal = Decimal(0)
-    total: Decimal
+    total: Decimal = Field(
+        description="subtotal minus discount, plus tax, plus shipping."
+    )
     notes: str | None = None

@@ -61,17 +61,18 @@ def validate_invoice(invoice: Invoice, *, tolerance: Decimal = TOLERANCE) -> Inv
                 }
             )
 
+    # Subtotal is the merchandise total only (receipt subtotal before coupon/tax).
+    # Discount, tax, and shipping are header adjustments applied on the invoice total.
     line_sum = sum((item.amount for item in invoice.line_items), Decimal(0))
-    expected_subtotal = line_sum - invoice.discount
-    if not _approx_equal(invoice.subtotal, expected_subtotal, tolerance):
+    if not _approx_equal(invoice.subtotal, line_sum, tolerance):
         errors.append(
             {
                 "type": PydanticCustomError(
                     "subtotal_mismatch",
-                    "subtotal {subtotal} != sum(line amounts) - discount ({expected})",
+                    "subtotal {subtotal} != sum(line amounts) ({expected})",
                     {
                         "subtotal": str(invoice.subtotal),
-                        "expected": str(expected_subtotal),
+                        "expected": str(line_sum),
                     },
                 ),
                 "loc": ("subtotal",),
@@ -79,13 +80,15 @@ def validate_invoice(invoice: Invoice, *, tolerance: Decimal = TOLERANCE) -> Inv
             }
         )
 
-    expected_total = invoice.subtotal + invoice.tax + invoice.shipping
+    expected_total = (
+        invoice.subtotal - invoice.discount + invoice.tax + invoice.shipping
+    )
     if not _approx_equal(invoice.total, expected_total, tolerance):
         errors.append(
             {
                 "type": PydanticCustomError(
                     "total_mismatch",
-                    "total {total} != subtotal + tax + shipping ({expected})",
+                    "total {total} != subtotal - discount + tax + shipping ({expected})",
                     {"total": str(invoice.total), "expected": str(expected_total)},
                 ),
                 "loc": ("total",),
